@@ -17,7 +17,7 @@
 
 #define MOSI_PIN 32
 #define MISO_PIN 33
-#define SPICLK_PIN 6
+#define SPICLK_PIN 18
 
 // ======================= Space for writing the configuration for the pins =======================
 
@@ -54,6 +54,12 @@ void spi_bus_init(void) {
         .data5_io_num = -1,
         .data6_io_num = -1,
         .data7_io_num = -1
+    };
+}
+
+void spi_device_interface__init(void) {
+    spi_device_interface_config_t spi_device_interface_config = {
+
     };
 }
 
