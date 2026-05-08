@@ -1,4 +1,16 @@
- #include <stdio.h>
+/*
+ *
+ * In order to understand the struct or the member that are used
+ * Plz refer the docs about the esp-idf API reference section for the information
+ * about the struct and also the member of it.
+ * In case you are not the author of the program plz make a pull request with all the
+ * information about the pull changes and the reason behind it.
+ *
+ */
+
+
+
+#include <stdio.h>
 #include "driver/gpio.h"
 #include "hal/gpio_types.h"
 #include "driver/spi_master.h"
@@ -19,8 +31,11 @@
 #define MOSI_PIN 32
 #define MISO_PIN 33
 #define SPICLK_PIN 18
+#define SPICS_PIN 15
 
 // ======================= Space for writing the configuration for the pins =======================
+
+// init function for motor drivers
 
 void m1_pin_init(void) {
     gpio_config_t m1_config = {
@@ -59,6 +74,8 @@ void spi_bus_init(void) {
     };
 }
 
+// init function for spi communication master side
+
 void spi_device_interface_init(void) {
     spi_device_interface_config_t spi_device_interface_config = {
         .command_bits = 8,
@@ -83,6 +100,24 @@ void spi_transaction_init(void) {
     };
 }
 
+// init function for spi communication slave side
+
+//TODO -> Use a different hand shake before the device starts to receive data from the master
+
+void spi_slave_transaction_init (void) {
+    spi_slave_transaction_t spi_salve_transaction_config = {
+        .length = 32,
+        .trans_len = 32,
+        .tx_buffer = 0,
+        .rx_buffer = 0
+    };
+}
+
+void spi_slace_interface_init(void) {
+    spi_slave_interface_config_t spi_salve_interface_config = {
+        .spics_io_num = ,
+    };
+}
 // ======================== Space for any function defined by the user =============================
 
 
