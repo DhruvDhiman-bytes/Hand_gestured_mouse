@@ -30,8 +30,8 @@
 
 #define MOSI_PIN 32
 #define MISO_PIN 33
-#define SPICLK_PIN 18
-#define SPICS_PIN 15
+#define SPICLK_PIN 14
+#define SPICS_PIN 5
 
 // ======================= Space for writing the configuration for the pins =======================
 
@@ -113,9 +113,9 @@ void spi_slave_transaction_init (void) {
     };
 }
 
-void spi_slace_interface_init(void) {
+void spi_slave_interface_init(void) {
     spi_slave_interface_config_t spi_salve_interface_config = {
-        .spics_io_num = ,
+        .spics_io_num = SPICLK_PIN,
     };
 }
 // ======================== Space for any function defined by the user =============================
