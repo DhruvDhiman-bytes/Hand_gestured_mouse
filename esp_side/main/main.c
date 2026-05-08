@@ -58,15 +58,27 @@ void spi_bus_init(void) {
     };
 }
 
-void spi_device_interface__init(void) {
+void spi_device_interface_init(void) {
     spi_device_interface_config_t spi_device_interface_config = {
-        .command_bits = 16,
+        .command_bits = 8,
         .address_bits  = 0,
-        .dummy_bits = 8,
+        .dummy_bits = 0,
         .mode = 0,
         .clock_source = SPI_CLK_SRC_DEFAULT,
         .clock_speed_hz = 40000,
         .input_delay_ns = 0,
+    };
+}
+
+void spi_transaction_init(void) {
+    spi_transaction_t spi_transaction_config = {
+        .cmd = 8,
+        .addr = 0,
+        .length = 32,
+        .rxlength = 64,
+        .override_freq_hz = 0,
+        .tx_buffer = NULL,
+        .rx_buffer = NULL,
     };
 }
 
