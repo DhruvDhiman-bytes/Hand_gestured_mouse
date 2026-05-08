@@ -54,7 +54,8 @@ void spi_bus_init(void) {
         .data4_io_num = -1,
         .data5_io_num = -1,
         .data6_io_num = -1,
-        .data7_io_num = -1
+        .data7_io_num = -1,
+        .isr_cpu_id = 0
     };
 }
 
