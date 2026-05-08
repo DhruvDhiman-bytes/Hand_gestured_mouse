@@ -62,14 +62,6 @@ void spi_bus_init(void) {
         .mosi_io_num = MOSI_PIN,
         .miso_io_num = MISO_PIN,
         .sclk_io_num = SPICLK_PIN,
-        .data0_io_num = -1,
-        .data1_io_num = -1,
-        .data2_io_num = -1,
-        .data3_io_num = -1,
-        .data4_io_num = -1,
-        .data5_io_num = -1,
-        .data6_io_num = -1,
-        .data7_io_num = -1,
         .isr_cpu_id = 0
     };
 }
