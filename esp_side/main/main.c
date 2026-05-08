@@ -116,6 +116,7 @@ void spi_slave_transaction_init (void) {
 void spi_slave_interface_init(void) {
     spi_slave_interface_config_t spi_salve_interface_config = {
         .spics_io_num = SPICLK_PIN,
+        .mode = 0,
     };
 }
 // ======================== Space for any function defined by the user =============================
