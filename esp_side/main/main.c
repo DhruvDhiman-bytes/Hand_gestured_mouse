@@ -3,6 +3,7 @@
 #include "hal/gpio_types.h"
 #include "driver/spi_master.h"
 #include "driver/spi_slave.h"
+#include "soc/clk_tree_defs.h"
 
 // ======================== Space for defining the pin using macro ===========================
 
@@ -59,7 +60,13 @@ void spi_bus_init(void) {
 
 void spi_device_interface__init(void) {
     spi_device_interface_config_t spi_device_interface_config = {
-
+        .command_bits = 16,
+        .address_bits  = 0,
+        .dummy_bits = 8,
+        .mode = 0,
+        .clock_source = SPI_CLK_SRC_DEFAULT,
+        .clock_speed_hz = 40000,
+        .input_delay_ns = 0,
     };
 }
 
