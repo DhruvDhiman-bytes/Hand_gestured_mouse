@@ -1,0 +1,24 @@
+# This is a code file for wifi client on the end of the laptop
+# This is the primary communication channel but if not working then falling
+# back to bluetooth client.
+# ==================== NOTE TO NON-AUTHOR ===========================
+# Plz explian the changes and also the reason behind it both arch way and software
+
+import socket
+
+# =============================
+# ESP32 CONFIG
+# =============================
+
+ESP32_IP = "192.168.1.100"
+PORT = 3333
+
+# =============================
+# CREATE SOCKET
+# =============================
+
+client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+# =============================
+# CONNECT FUNCTION
+# =============================
