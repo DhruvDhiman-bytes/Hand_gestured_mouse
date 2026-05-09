@@ -46,3 +46,13 @@ def send_command(command):
 
     except Exception as e:
         print(f"[ERROR] send failed: {e}")
+
+# ==================================
+# CLOSE CONNECTION
+# ==================================
+
+def close_connection():
+
+    client.close()
+
+    print("[INFO] connection closed")
