@@ -8,6 +8,12 @@
  *
  */
 
+/*
+ * TODO
+ *  - Combine the init function for the motor driver into one function
+ *  - After combining see for any errors or warning coming up
+ */
+
 
 
 #include <stdio.h>
