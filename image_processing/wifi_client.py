@@ -22,3 +22,13 @@ client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 # =============================
 # CONNECT FUNCTION
 # =============================
+
+def connect_wifi():
+
+    try:
+        client.connect((ESP32_IP, PORT))
+
+        print("[INFO] connected to ESP32")
+
+    except Exception as e:
+        print(f"[ERROR] connection failed: {e}")
