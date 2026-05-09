@@ -121,3 +121,121 @@ while True:
             # Draw YOLO box
 
             cv2.rectangle(frame, (x1,y1),(x2,y2),(255,0,0),2)
+
+            # ========================
+            # REGION OF INTEREST
+            # ========================
+
+            roi = frame[y1:y2, x1:x2]
+
+            if roi.size == 0:
+                continue
+
+            # ===================
+            # HSV CONVERSION
+            # ===================
+
+            hsv = cv2.cvtColor(
+                roi,
+                cv2.COLOR_BGR2HSV
+            )
+
+            # ===================
+            # RED COLOR MASK
+            # ===================
+
+            lower_red_1 = np.array([0,120,70])
+            upper_red_1 = np.array([10, 255, 255])
+
+            lower_red_2 = np.array([170, 120, 70])
+            upper_red_2 = np.array([180, 255, 255])
+
+            mask1 = cv2.inRange(
+                hsv, lower_red_1, upper_red_1
+            )
+
+            mask2 = cv2.inRange(
+                hsv,
+                upper_red_1, upper_red_2
+            )
+
+            mask  = mask1 + mask2
+
+            # =========================
+            # REMOVE NOISE
+            # =========================
+
+            kernel = np.ones((5,5), np.uint8)
+
+            mask = cv2.erode(
+                mask,
+                kernel,
+                iterations = 1
+            )
+
+            mask = cv2.dilate(
+                mask,
+                kernel,
+                iterations=2
+            )
+
+            # ===================
+            # FIND CONTOURS
+            # ==================
+
+            contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+            finger_count = 0
+
+            for cnt in contours:
+
+                area = cv2.contourArea(cnt)
+
+                # ignore tiny noise
+                if area < 300:
+                    continue
+
+                finger_count += 1
+
+                rx,ry, rw, rh = cv2.boundingRect(cnt)
+
+                cv2.rectangle(roi, (rx,ry), (rx + rw, ry + rh), (0,255,0), 2)
+
+            # =========================
+            # COMMAND GENERATION
+            # =========================
+
+            command = get_commands(finger_count)
+
+
+        # =====================
+        # DISPLAY TEXT
+        # =====================
+
+        cv2.putText(frame, f"fingers: {finger_count}", (10, 40), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+
+        cv2.putText(frame, f"commands: {command}", (10, 80), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2)
+
+        # ========================
+        # SHOW WINDOWS
+        # ========================
+
+        cv2.imshow(
+            "YOLO gesture control", frame
+        )
+
+        # ========================
+        # EXIT KEY
+        # ========================
+
+        key = cv2.waitKey(1)
+
+        if key == 27:
+            break
+
+# =====================
+# CLEANUP
+# =====================
+
+cap.release()
+cv2.destoryAllWindows()
