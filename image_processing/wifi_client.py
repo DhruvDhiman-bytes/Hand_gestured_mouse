@@ -32,3 +32,17 @@ def connect_wifi():
 
     except Exception as e:
         print(f"[ERROR] connection failed: {e}")
+
+# ===================================
+# SEND COMMAND
+# ===================================
+
+def send_command(command):
+
+    try:
+        client.send(command.encode())
+
+        print(f"[SENT] {command}")
+
+    except Exception as e:
+        print(f"[ERROR] send failed: {e}")
