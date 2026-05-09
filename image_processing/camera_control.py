@@ -6,3 +6,40 @@
 #   - The reason behind
 #   - The architecture it will support
 #   - Tools compatiblity
+
+import cv2
+import numpy as np
+from ultralytics import YOLO
+
+# ==========================
+# LOAD YOLO MODEL
+# ==========================
+
+model = YOLO("yolov8n.pt")
+
+# ==========================
+# CAMERA
+# ==========================
+
+cap = cv2.VideoCapture(0)
+
+# =========================
+# COMMAND FUNCTION
+# =========================
+
+def get_commands(fingers):
+
+    if fingers == 0:
+        return "STOP"
+
+    elif fingers == 1:
+        return "FORWARD"
+
+    elif fingers == 2:
+        return "RIGHT"
+
+    elif fingers == 0:
+        return "LEFT"
+
+    else:
+        return "REVERSE"
