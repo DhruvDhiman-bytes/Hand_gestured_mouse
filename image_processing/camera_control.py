@@ -8,66 +8,43 @@
 #   - Tools compatiblity
 
 import cv2
-import numpy as np
 from ultralytics import YOLO
 
-# =========== Variables ==============
-
-finger_count = 0
-
-# ==========================
+# ==========================================
 # LOAD YOLO MODEL
-# ==========================
+# ==========================================
 
 model = YOLO("yolov8n.pt")
 
-# ==========================
-# CAMERA
-# ==========================
+# ==========================================
+# CAMERA SETUP
+# ==========================================
 
 cap = cv2.VideoCapture(0)
+
+cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+cap.set(cv2.CAP_PROP_FPS, 30)
 
 if not cap.isOpened():
     print("Failed to open camera")
     exit()
 
-# =====================
-# COMMAND MAPPING
-# =====================
-
-def get_commands(finger_count):
-
-    if finger_count == 0:
-        return "STOP"
-
-    elif finger_count == 1:
-        return "FORWARD"
-
-    elif finger_count == 2:
-        return "RIGHT"
-
-    elif finger_count == 3:
-        return "LEFT"
-
-    else:
-        return "REVERSE"
-
-# =====================
+# ==========================================
 # MAIN LOOP
-# =====================
+# ==========================================
 
 while True:
 
-    # =====================
-    # DEFAULT VALUES
-    # =====================
+    # ======================================
+    # DEFAULT COMMAND
+    # ======================================
 
-    finger_count = 0
     command = "STOP"
 
-    # ======================
-    # CAPTURE FRAMES
-    # ======================
+    # ======================================
+    # CAPTURE FRAME
+    # ======================================
 
     ret, frame = cap.read()
 
@@ -75,17 +52,75 @@ while True:
         print("Failed to capture frame")
         break
 
-    # Mirror frame
+    # Mirror effect
     frame = cv2.flip(frame, 1)
 
-    # =============================
+    frame_height, frame_width, _ = frame.shape
+
+    # ======================================
+    # FRAME CENTER
+    # ======================================
+
+    center_x = frame_width // 2
+    center_y = frame_height // 2
+
+    # ======================================
+    # CONTROL ZONES
+    # ======================================
+
+    left_boundary = center_x - 100
+    right_boundary = center_x + 100
+
+    top_boundary = center_y - 80
+    bottom_boundary = center_y + 80
+
+    # ======================================
+    # DRAW GUIDE LINES
+    # ======================================
+
+    # Vertical lines
+    cv2.line(
+        frame,
+        (left_boundary, 0),
+        (left_boundary, frame_height),
+        (0, 255, 0),
+        2
+    )
+
+    cv2.line(
+        frame,
+        (right_boundary, 0),
+        (right_boundary, frame_height),
+        (0, 255, 0),
+        2
+    )
+
+    # Horizontal lines
+    cv2.line(
+        frame,
+        (0, top_boundary),
+        (frame_width, top_boundary),
+        (255, 0, 0),
+        2
+    )
+
+    cv2.line(
+        frame,
+        (0, bottom_boundary),
+        (frame_width, bottom_boundary),
+        (255, 0, 0),
+        2
+    )
+
+    # ======================================
     # YOLO INFERENCE
-    # =============================
+    # ======================================
+
     results = model(frame)
 
-    # ==============================
-    # PROCESS DETECTION
-    # ==============================
+    # ======================================
+    # PROCESS DETECTIONS
+    # ======================================
 
     for result in results:
 
@@ -96,146 +131,118 @@ while True:
 
         for box in boxes:
 
-            # ===========================
-            # CLASS ID
-            # ===========================
-
             cls = int(box.cls[0])
 
             # COCO class 0 = person
             if cls != 0:
                 continue
 
-            # =========================
-            # GET BOX CO-ORDINATES
-            # =========================
+            # ==================================
+            # GET COORDINATES
+            # ==================================
 
-            x1,y1,x2,y2 = map(int, box.xyxy[0])
-
-            # safety checks
-            x1 = map(0, x1)
-            y1 = map(0, y1)
-            x2 = map(frame.shape[1], x2)
-            y2 = map(frame.shape[0], y2)
-
-            # Draw YOLO box
-
-            cv2.rectangle(frame, (x1,y1),(x2,y2),(255,0,0),2)
-
-            # ========================
-            # REGION OF INTEREST
-            # ========================
-
-            roi = frame[y1:y2, x1:x2]
-
-            if roi.size == 0:
-                continue
-
-            # ===================
-            # HSV CONVERSION
-            # ===================
-
-            hsv = cv2.cvtColor(
-                roi,
-                cv2.COLOR_BGR2HSV
+            x1, y1, x2, y2 = map(
+                int,
+                box.xyxy[0]
             )
 
-            # ===================
-            # RED COLOR MASK
-            # ===================
+            # Safety checks
+            x1 = max(0, x1)
+            y1 = max(0, y1)
 
-            lower_red_1 = np.array([0,120,70])
-            upper_red_1 = np.array([10, 255, 255])
+            x2 = min(frame_width, x2)
+            y2 = min(frame_height, y2)
 
-            lower_red_2 = np.array([170, 120, 70])
-            upper_red_2 = np.array([180, 255, 255])
+            # ==================================
+            # DRAW DETECTION BOX
+            # ==================================
 
-            mask1 = cv2.inRange(
-                hsv, lower_red_1, upper_red_1
+            cv2.rectangle(
+                frame,
+                (x1, y1),
+                (x2, y2),
+                (0, 255, 255),
+                2
             )
 
-            mask2 = cv2.inRange(
-                hsv,
-                upper_red_1, upper_red_2
+            # ==================================
+            # CENTER POINT
+            # ==================================
+
+            cx = (x1 + x2) // 2
+            cy = (y1 + y2) // 2
+
+            # Draw center point
+            cv2.circle(
+                frame,
+                (cx, cy),
+                8,
+                (0, 0, 255),
+                -1
             )
 
-            mask  = mask1 + mask2
+            # ==================================
+            # COMMAND LOGIC
+            # ==================================
 
-            # =========================
-            # REMOVE NOISE
-            # =========================
+            if cx < left_boundary:
 
-            kernel = np.ones((5,5), np.uint8)
+                command = "LEFT"
 
-            mask = cv2.erode(
-                mask,
-                kernel,
-                iterations = 1
-            )
+            elif cx > right_boundary:
 
-            mask = cv2.dilate(
-                mask,
-                kernel,
-                iterations=2
-            )
+                command = "RIGHT"
 
-            # ===================
-            # FIND CONTOURS
-            # ==================
+            elif cy < top_boundary:
 
-            contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+                command = "FORWARD"
 
-            finger_count = 0
+            elif cy > bottom_boundary:
 
-            for cnt in contours:
+                command = "REVERSE"
 
-                area = cv2.contourArea(cnt)
+            else:
 
-                # ignore tiny noise
-                if area < 300:
-                    continue
+                command = "STOP"
 
-                finger_count += 1
-
-                rx,ry, rw, rh = cv2.boundingRect(cnt)
-
-                cv2.rectangle(roi, (rx,ry), (rx + rw, ry + rh), (0,255,0), 2)
-
-            # =========================
-            # COMMAND GENERATION
-            # =========================
-
-            command = get_commands(finger_count)
-
-
-        # =====================
-        # DISPLAY TEXT
-        # =====================
-
-        cv2.putText(frame, f"fingers: {finger_count}", (10, 40), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-
-        cv2.putText(frame, f"commands: {command}", (10, 80), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2)
-
-        # ========================
-        # SHOW WINDOWS
-        # ========================
-
-        cv2.imshow(
-            "YOLO gesture control", frame
-        )
-
-        # ========================
-        # EXIT KEY
-        # ========================
-
-        key = cv2.waitKey(1)
-
-        if key == 27:
+            # Only track first detected person
             break
 
-# =====================
+    # ======================================
+    # DISPLAY COMMAND
+    # ======================================
+
+    cv2.putText(
+        frame,
+        f"Command: {command}",
+        (20, 40),
+        cv2.FONT_HERSHEY_SIMPLEX,
+        1,
+        (0, 255, 0),
+        2
+    )
+
+    # ======================================
+    # SHOW WINDOW
+    # ======================================
+
+    cv2.imshow(
+        "YOLO Robot Control",
+        frame
+    )
+
+    # ======================================
+    # EXIT KEY
+    # ======================================
+
+    key = cv2.waitKey(1)
+
+    if key == 27:
+        break
+
+# ==========================================
 # CLEANUP
-# =====================
+# ==========================================
 
 cap.release()
-cv2.destoryAllWindows()
+cv2.destroyAllWindows()
