@@ -11,6 +11,10 @@ import cv2
 import numpy as np
 from ultralytics import YOLO
 
+# =========== Variables ==============
+
+finger_count = 0
+
 # ==========================
 # LOAD YOLO MODEL
 # ==========================
@@ -23,23 +27,31 @@ model = YOLO("yolov8n.pt")
 
 cap = cv2.VideoCapture(0)
 
-# =========================
-# COMMAND FUNCTION
-# =========================
+if not cap.isOpened():
+    print("Failed to open camera")
+    exit()
 
-def get_commands(fingers):
+# =====================
+# COMMAND MAPPING
+# =====================
 
-    if fingers == 0:
+def get_commands(finger_count):
+
+    if finger_count == 0:
         return "STOP"
 
-    elif fingers == 1:
+    elif finger_count == 1:
         return "FORWARD"
 
-    elif fingers == 2:
+    elif finger_count == 2:
         return "RIGHT"
 
-    elif fingers == 0:
+    elif finger_count == 3:
         return "LEFT"
 
     else:
         return "REVERSE"
+
+# =====================
+# MAIN LOOP
+# =====================
