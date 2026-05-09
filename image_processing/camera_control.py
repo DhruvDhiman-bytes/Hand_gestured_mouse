@@ -55,3 +55,69 @@ def get_commands(finger_count):
 # =====================
 # MAIN LOOP
 # =====================
+
+while True:
+
+    # =====================
+    # DEFAULT VALUES
+    # =====================
+
+    finger_count = 0
+    command = "STOP"
+
+    # ======================
+    # CAPTURE FRAMES
+    # ======================
+
+    ret, frame = cap.read()
+
+    if not ret:
+        print("Failed to capture frame")
+        break
+
+    # Mirror frame
+    frame = cv2.flip(frame, 1)
+
+    # =============================
+    # YOLO INFERENCE
+    # =============================
+    results = model(frame)
+
+    # ==============================
+    # PROCESS DETECTION
+    # ==============================
+
+    for result in results:
+
+        boxes = result.boxes
+
+        if boxes is None:
+            continue
+
+        for box in boxes:
+
+            # ===========================
+            # CLASS ID
+            # ===========================
+
+            cls = int(box.cls[0])
+
+            # COCO class 0 = person
+            if cls != 0:
+                continue
+
+            # =========================
+            # GET BOX CO-ORDINATES
+            # =========================
+
+            x1,y1,x2,y2 = map(int, box.xyxy[0])
+
+            # safety checks
+            x1 = map(0, x1)
+            y1 = map(0, y1)
+            x2 = map(frame.shape[1], x2)
+            y2 = map(frame.shape[0], y2)
+
+            # Draw YOLO box
+
+            cv2.rectangle(frame, (x1,y1),(x2,y2),(255,0,0),2)
