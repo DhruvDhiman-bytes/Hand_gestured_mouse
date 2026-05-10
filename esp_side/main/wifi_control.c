@@ -7,6 +7,7 @@
  * and the choices you make for it, explain the meaning behind them too
  */
 
+#include <setjmp.h>
 #include <stdio.h>
 #include "esp_wifi_types_generic.h"
 #include "freertos/FreeRTOS.h"
@@ -17,6 +18,7 @@
 #include "esp_wifi.h"
 #include "esp_event.h"
 #include "esp_log.h"
+#include "nvs.h"
 #include "nvs_flash.h"
 #include "lwip/err.h"
 #include "lwip/sys.h"
@@ -60,7 +62,7 @@ static void event_handler(void *arg, esp_event_base_t event_base, int32_t event_
     }
 }
 
-void wifi_init_sta(void) {
+esp_err_t wifi_init_sta(void) {
     s_wifi_event_group = xEventGroupCreate();
 
     // initalize TCP/IP stack
@@ -103,4 +105,18 @@ void wifi_init_sta(void) {
     else if (bits & WIFI_FAIL_BIT) {
         ESP_LOGI(TAG, "Failed to connect!!!");
     }
+}
+
+void app_main(void) {
+    //initialize nvs
+
+    esp_err_t ret = nvs_flash_init();
+    if(ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
+        ESP_ERROR_CHECK(nvs_flash_erase());
+        ret = nvs_flash_init();
+    }
+
+    ESP_ERROR_CHECK(ret);
+
+    wifi_init_sta();
 }
