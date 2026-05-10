@@ -10,6 +10,8 @@
 import cv2
 from ultralytics import YOLO
 
+from wifi_client import close_connection, connect_wifi, send_command
+
 # ==========================================
 # LOAD YOLO MODEL
 # ==========================================
@@ -34,13 +36,20 @@ if not cap.isOpened():
 # MAIN LOOP
 # ==========================================
 
-while True:
+connect_wifi()
 
+previous_command = ""
+
+while True:
     # ======================================
     # DEFAULT COMMAND
     # ======================================
 
     command = "STOP"
+
+    # ===== [NEW] PERSON DETECTION FLAG ===============
+
+    person_detected = False
 
     # ======================================
     # CAPTURE FRAME
@@ -79,37 +88,15 @@ while True:
     # ======================================
 
     # Vertical lines
-    cv2.line(
-        frame,
-        (left_boundary, 0),
-        (left_boundary, frame_height),
-        (0, 255, 0),
-        2
-    )
+    cv2.line(frame, (left_boundary, 0), (left_boundary, frame_height), (0, 255, 0), 2)
 
-    cv2.line(
-        frame,
-        (right_boundary, 0),
-        (right_boundary, frame_height),
-        (0, 255, 0),
-        2
-    )
+    cv2.line(frame, (right_boundary, 0), (right_boundary, frame_height), (0, 255, 0), 2)
 
     # Horizontal lines
-    cv2.line(
-        frame,
-        (0, top_boundary),
-        (frame_width, top_boundary),
-        (255, 0, 0),
-        2
-    )
+    cv2.line(frame, (0, top_boundary), (frame_width, top_boundary), (255, 0, 0), 2)
 
     cv2.line(
-        frame,
-        (0, bottom_boundary),
-        (frame_width, bottom_boundary),
-        (255, 0, 0),
-        2
+        frame, (0, bottom_boundary), (frame_width, bottom_boundary), (255, 0, 0), 2
     )
 
     # ======================================
@@ -123,14 +110,12 @@ while True:
     # ======================================
 
     for result in results:
-
         boxes = result.boxes
 
         if boxes is None:
             continue
 
         for box in boxes:
-
             cls = int(box.cls[0])
 
             # COCO class 0 = person
@@ -141,10 +126,7 @@ while True:
             # GET COORDINATES
             # ==================================
 
-            x1, y1, x2, y2 = map(
-                int,
-                box.xyxy[0]
-            )
+            x1, y1, x2, y2 = map(int, box.xyxy[0])
 
             # Safety checks
             x1 = max(0, x1)
@@ -157,13 +139,7 @@ while True:
             # DRAW DETECTION BOX
             # ==================================
 
-            cv2.rectangle(
-                frame,
-                (x1, y1),
-                (x2, y2),
-                (0, 255, 255),
-                2
-            )
+            cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 255), 2)
 
             # ==================================
             # CENTER POINT
@@ -173,41 +149,40 @@ while True:
             cy = (y1 + y2) // 2
 
             # Draw center point
-            cv2.circle(
-                frame,
-                (cx, cy),
-                8,
-                (0, 0, 255),
-                -1
-            )
+            cv2.circle(frame, (cx, cy), 8, (0, 0, 255), -1)
 
             # ==================================
             # COMMAND LOGIC
             # ==================================
 
             if cx < left_boundary:
-
                 command = "LEFT"
 
             elif cx > right_boundary:
-
                 command = "RIGHT"
 
             elif cy < top_boundary:
-
                 command = "FORWARD"
 
             elif cy > bottom_boundary:
-
                 command = "REVERSE"
 
             else:
-
                 command = "STOP"
 
-            # Only track first detected person
+            if command != previous_command:
+                send_command(command)
+                previous_command = command
+
+            # ======================
+            # [NEW] TRACK ONLY FIRST PERSON
+            # ======================
+
+            person_detected = True
             break
 
+        if person_detected:
+            break
     # ======================================
     # DISPLAY COMMAND
     # ======================================
@@ -219,17 +194,14 @@ while True:
         cv2.FONT_HERSHEY_SIMPLEX,
         1,
         (0, 255, 0),
-        2
+        2,
     )
 
     # ======================================
     # SHOW WINDOW
     # ======================================
 
-    cv2.imshow(
-        "YOLO Robot Control",
-        frame
-    )
+    cv2.imshow("YOLO Robot Control", frame)
 
     # ======================================
     # EXIT KEY
@@ -243,6 +215,6 @@ while True:
 # ==========================================
 # CLEANUP
 # ==========================================
-
+close_connection()
 cap.release()
 cv2.destroyAllWindows()
