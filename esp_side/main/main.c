@@ -11,6 +11,7 @@
 
 
 #include <stdio.h>
+#include <string.h>
 #include "driver/gpio.h"
 #include "hal/gpio_types.h"
 #include "driver/spi_master.h"
@@ -157,6 +158,33 @@ void motor_right(void) {
     gpio_set_level(M2_PIN_IN1, 0);
     gpio_set_level(M2_PIN_IN2, 1);
 }
+
+// ================= PROCESS RECEIVED COMMAND ===============
+
+void process_command(char *command) {
+    motor_stop();
+
+    if(strcmp(command, "FORWARD") == 0) {
+        motor_forward();
+    }
+
+    else if(strcmp(command, "BACKWARD") == 0) {
+        motor_backward();
+    }
+
+    else if(strcmp(command, "LEFT") == 0) {
+        motor_left();
+    }
+
+    else if(strcmp(command, "RIGHT") == 0) {
+        motor_right();
+    }
+
+    else if(strcmp(command, "STOP") == 0) {
+        motor_stop();
+    }
+}
+
 void app_main(void)
 {
     // calling on the function for initialzing the config for the pins
