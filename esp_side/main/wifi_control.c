@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include "esp_wifi_types_generic.h"
 #include "freertos/FreeRTOS.h"
+#include "freertos/projdefs.h"
 #include "freertos/task.h"
 #include "freertos/event_groups.h"
 #include "esp_system.h"
@@ -19,6 +20,7 @@
 #include "nvs_flash.h"
 #include "lwip/err.h"
 #include "lwip/sys.h"
+#include "portmacro.h"
 
 
 // ================ Space for global variables and macro ==========================
@@ -87,4 +89,18 @@ void wifi_init_sta(void) {
             .sae_h2e_identifier = "",
         },
     };
+
+    ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
+    ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config));
+    ESP_ERROR_CHECK(esp_wifi_start());
+
+    // Wait for connection or failure
+    EventBits_t bits = xEventGroupWaitBits(s_wifi_event_group, WIFI_CONNECTED_BIT | WIFI_FAIL_BIT, pdFALSE, pdFALSE, portMAX_DELAY);
+
+    if (bits & WIFI_CONNECTED_BIT) {
+        ESP_LOGI(TAG, "Connected to WIFI!!");
+    }
+    else if (bits & WIFI_FAIL_BIT) {
+        ESP_LOGI(TAG, "Failed to connect!!!");
+    }
 }
