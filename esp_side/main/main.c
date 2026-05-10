@@ -150,11 +150,13 @@ void motor_left(void) {
     gpio_set_level(M2_PIN_IN2, 0);
 }
 
-// ======================== Space for any function defined by the user =============================
+void motor_right(void) {
+    gpio_set_level(M1_PIN_IN1, 1);
+    gpio_set_level(M1_PIN_IN2, 0);
 
-
-
-
+    gpio_set_level(M2_PIN_IN1, 0);
+    gpio_set_level(M2_PIN_IN2, 1);
+}
 void app_main(void)
 {
     // calling on the function for initialzing the config for the pins
