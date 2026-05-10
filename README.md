@@ -6,6 +6,5 @@ This is a learning project that is build to learn about ESP32 for the project th
 
 - ESP32 -> doing most of the work
 - Motor driver -> ACEBOTT L293D Motor Driver Shield
-- Camera module -> to see the users hand motion
 - arduino uno -> for display's working
 - display module -> to display information
