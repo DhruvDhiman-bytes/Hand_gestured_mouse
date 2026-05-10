@@ -134,6 +134,22 @@ void motor_forward(void)
     gpio_set_level(M2_PIN_IN2, 0);
 }
 
+void motor_backward(void) {
+    gpio_set_level(M1_PIN_IN1,0);
+    gpio_set_level(M1_PIN_IN1, 1);
+
+    gpio_set_level(M2_PIN_IN1, 0);
+    gpio_set_level(M2_PIN_IN2, 1);
+}
+
+void motor_left(void) {
+    gpio_set_level(M1_PIN_IN1, 0);
+    gpio_set_level(M1_PIN_IN2, 1);
+
+    gpio_set_level(M2_PIN_IN2, 1);
+    gpio_set_level(M2_PIN_IN2, 0);
+}
+
 // ======================== Space for any function defined by the user =============================
 
 
