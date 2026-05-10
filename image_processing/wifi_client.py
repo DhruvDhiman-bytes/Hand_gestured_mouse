@@ -5,6 +5,7 @@
 # Plz explian the changes and also the reason behind it both arch way and software
 
 import socket
+from multiprocessing.connection import Client
 
 # =============================
 # ESP32 CONFIG
@@ -14,28 +15,33 @@ ESP32_IP = "192.168.1.100"
 PORT = 3333
 
 # =============================
-# CREATE SOCKET
-# =============================
-
-client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
-# =============================
 # CONNECT FUNCTION
 # =============================
 
+
 def connect_wifi():
+    global Client
+    global wifi_connected
 
     try:
+        client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        client.settimeout(3)
+
         client.connect((ESP32_IP, PORT))
 
-        print("[INFO] connected to ESP32")
+        wifi_connected = True
 
+        print("[INFO] Connected to ESP32")
     except Exception as e:
-        print(f"[ERROR] connection failed: {e}")
+        wifi_connected = False
+
+        print(f"[WARNING] WiFi not connected: {e}")
+
 
 # ===================================
 # SEND COMMAND
 # ===================================
+
 
 def send_command(command):
 
@@ -47,9 +53,11 @@ def send_command(command):
     except Exception as e:
         print(f"[ERROR] send failed: {e}")
 
+
 # ==================================
 # CLOSE CONNECTION
 # ==================================
+
 
 def close_connection():
 
