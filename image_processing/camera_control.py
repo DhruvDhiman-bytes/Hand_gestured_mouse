@@ -13,55 +13,154 @@ from ultralytics import YOLO
 from wifi_client import close_connection, connect_wifi, send_command
 
 # ==========================================
+# CONFIGURATION
+# ==========================================
+
+MODEL_PATH = "yolov8n.pt"
+
+FRAME_WIDTH = 640
+FRAME_HEIGHT = 480
+FPS = 30
+
+LEFT_RIGHT_OFFSET = 100
+TOP_BOTTOM_OFFSET = 80
+
+BOX_COLOR = (255, 255, 255)
+CENTER_COLOR = (0, 0, 255)
+
+LEFT_RIGHT_LINE_COLOR = (0, 255, 0)
+TOP_BOTTOM_LINE_COLOR = (255, 0, 0)
+
+TEXT_COLOR = (0, 255, 0)
+
+# ==========================================
 # LOAD YOLO MODEL
 # ==========================================
 
-model = YOLO("yolov8n.pt")
+model = YOLO(MODEL_PATH)
 
 # ==========================================
-# CAMERA SETUP
+# CAMERA INITIALIZATION
 # ==========================================
 
 cap = cv2.VideoCapture(0)
 
-cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
-cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
-cap.set(cv2.CAP_PROP_FPS, 30)
+cap.set(cv2.CAP_PROP_FRAME_WIDTH, FRAME_WIDTH)
+cap.set(cv2.CAP_PROP_FRAME_HEIGHT, FRAME_HEIGHT)
+cap.set(cv2.CAP_PROP_FPS, FPS)
 
 if not cap.isOpened():
-    print("Failed to open camera")
+    print("[ERROR] Failed to open camera")
+
     exit()
+
+# ==========================================
+# WIFI CONNECTION
+# ==========================================
+
+connect_wifi()
+
+# ==========================================
+# PREVIOUS COMMAND TRACKER
+# ==========================================
+
+previous_command = ""
+
+# ==========================================
+# COMMAND GENERATION
+# ==========================================
+
+
+def get_command(cx, cy, left_boundary, right_boundary, top_boundary, bottom_boundary):
+
+    if cx < left_boundary:
+        return "LEFT"
+
+    elif cx > right_boundary:
+        return "RIGHT"
+
+    elif cy < top_boundary:
+        return "FORWARD"
+
+    elif cy > bottom_boundary:
+        return "REVERSE"
+
+    else:
+        return "STOP"
+
+
+# ==========================================
+# DRAW CONTROL ZONES
+# ==========================================
+
+
+def draw_control_lines(
+    frame,
+    left_boundary,
+    right_boundary,
+    top_boundary,
+    bottom_boundary,
+    frame_width,
+    frame_height,
+):
+
+    # LEFT LINE
+    cv2.line(
+        frame,
+        (left_boundary, 0),
+        (left_boundary, frame_height),
+        LEFT_RIGHT_LINE_COLOR,
+        2,
+    )
+
+    # RIGHT LINE
+    cv2.line(
+        frame,
+        (right_boundary, 0),
+        (right_boundary, frame_height),
+        LEFT_RIGHT_LINE_COLOR,
+        2,
+    )
+
+    # TOP LINE
+    cv2.line(
+        frame, (0, top_boundary), (frame_width, top_boundary), TOP_BOTTOM_LINE_COLOR, 2
+    )
+
+    # BOTTOM LINE
+    cv2.line(
+        frame,
+        (0, bottom_boundary),
+        (frame_width, bottom_boundary),
+        TOP_BOTTOM_LINE_COLOR,
+        2,
+    )
+
 
 # ==========================================
 # MAIN LOOP
 # ==========================================
 
-connect_wifi()
-
-previous_command = ""
-
 while True:
-    # ======================================
-    # DEFAULT COMMAND
-    # ======================================
-
     command = "STOP"
-
-    # ===== [NEW] PERSON DETECTION FLAG ===============
 
     person_detected = False
 
     # ======================================
-    # CAPTURE FRAME
+    # READ CAMERA FRAME
     # ======================================
 
     ret, frame = cap.read()
 
     if not ret:
-        print("Failed to capture frame")
+        print("[ERROR] Failed to capture frame")
+
         break
 
-    # Mirror effect
+    # ======================================
+    # MIRROR FRAME
+    # ======================================
+
     frame = cv2.flip(frame, 1)
 
     frame_height, frame_width, _ = frame.shape
@@ -74,33 +173,31 @@ while True:
     center_y = frame_height // 2
 
     # ======================================
-    # CONTROL ZONES
+    # CONTROL BOUNDARIES
     # ======================================
 
-    left_boundary = center_x - 100
-    right_boundary = center_x + 100
+    left_boundary = center_x - LEFT_RIGHT_OFFSET
+    right_boundary = center_x + LEFT_RIGHT_OFFSET
 
-    top_boundary = center_y - 80
-    bottom_boundary = center_y + 80
+    top_boundary = center_y - TOP_BOTTOM_OFFSET
+    bottom_boundary = center_y + TOP_BOTTOM_OFFSET
 
     # ======================================
-    # DRAW GUIDE LINES
+    # DRAW CONTROL LINES
     # ======================================
 
-    # Vertical lines
-    cv2.line(frame, (left_boundary, 0), (left_boundary, frame_height), (0, 255, 0), 2)
-
-    cv2.line(frame, (right_boundary, 0), (right_boundary, frame_height), (0, 255, 0), 2)
-
-    # Horizontal lines
-    cv2.line(frame, (0, top_boundary), (frame_width, top_boundary), (255, 0, 0), 2)
-
-    cv2.line(
-        frame, (0, bottom_boundary), (frame_width, bottom_boundary), (255, 0, 0), 2
+    draw_control_lines(
+        frame,
+        left_boundary,
+        right_boundary,
+        top_boundary,
+        bottom_boundary,
+        frame_width,
+        frame_height,
     )
 
     # ======================================
-    # YOLO INFERENCE
+    # YOLO DETECTION
     # ======================================
 
     results = model(frame)
@@ -118,17 +215,20 @@ while True:
         for box in boxes:
             cls = int(box.cls[0])
 
-            # COCO class 0 = person
+            # COCO CLASS 0 = PERSON
             if cls != 0:
                 continue
 
             # ==================================
-            # GET COORDINATES
+            # BOUNDING BOX COORDINATES
             # ==================================
 
             x1, y1, x2, y2 = map(int, box.xyxy[0])
 
-            # Safety checks
+            # ==================================
+            # SAFETY LIMITS
+            # ==================================
+
             x1 = max(0, x1)
             y1 = max(0, y1)
 
@@ -139,7 +239,7 @@ while True:
             # DRAW DETECTION BOX
             # ==================================
 
-            cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 255), 2)
+            cv2.rectangle(frame, (x1, y1), (x2, y2), BOX_COLOR, 2)
 
             # ==================================
             # CENTER POINT
@@ -148,41 +248,38 @@ while True:
             cx = (x1 + x2) // 2
             cy = (y1 + y2) // 2
 
-            # Draw center point
-            cv2.circle(frame, (cx, cy), 8, (0, 0, 255), -1)
+            cv2.circle(frame, (cx, cy), 8, CENTER_COLOR, -1)
 
             # ==================================
-            # COMMAND LOGIC
+            # COMMAND GENERATION
             # ==================================
 
-            if cx < left_boundary:
-                command = "LEFT"
+            command = get_command(
+                cx, cy, left_boundary, right_boundary, top_boundary, bottom_boundary
+            )
 
-            elif cx > right_boundary:
-                command = "RIGHT"
-
-            elif cy < top_boundary:
-                command = "FORWARD"
-
-            elif cy > bottom_boundary:
-                command = "REVERSE"
-
-            else:
-                command = "STOP"
+            # ==================================
+            # SEND ONLY IF CHANGED
+            # ==================================
 
             if command != previous_command:
                 send_command(command)
+
                 previous_command = command
 
-            # ======================
-            # [NEW] TRACK ONLY FIRST PERSON
-            # ======================
+                print(f"[COMMAND] {command}")
+
+            # ==================================
+            # TRACK ONLY FIRST PERSON
+            # ==================================
 
             person_detected = True
+
             break
 
         if person_detected:
             break
+
     # ======================================
     # DISPLAY COMMAND
     # ======================================
@@ -193,12 +290,12 @@ while True:
         (20, 40),
         cv2.FONT_HERSHEY_SIMPLEX,
         1,
-        (0, 255, 0),
+        TEXT_COLOR,
         2,
     )
 
     # ======================================
-    # SHOW WINDOW
+    # DISPLAY WINDOW
     # ======================================
 
     cv2.imshow("YOLO Robot Control", frame)
@@ -215,6 +312,9 @@ while True:
 # ==========================================
 # CLEANUP
 # ==========================================
+
 close_connection()
+
 cap.release()
+
 cv2.destroyAllWindows()
