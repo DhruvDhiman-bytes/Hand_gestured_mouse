@@ -8,12 +8,6 @@
  *
  */
 
-/*
- * TODO
- *  - Combine the init function for the motor driver into one function
- *  - After combining see for any errors or warning coming up
- */
-
 
 
 #include <stdio.h>
@@ -21,6 +15,7 @@
 #include "hal/gpio_types.h"
 #include "driver/spi_master.h"
 #include "driver/spi_slave.h"
+#include "hal/spi_types.h"
 #include "soc/clk_tree_defs.h"
 
 // ======================== Space for defining the pin using macro ===========================
@@ -70,6 +65,7 @@ void spi_bus_init(void) {
         .sclk_io_num = SPICLK_PIN,
         .isr_cpu_id = 0
     };
+    spi_bus_initialize(SPI2_HOST, &spi_bus_config, SPI_DMA_CH_AUTO);
 }
 
 // init function for spi communication master side
@@ -113,10 +109,31 @@ void spi_slave_transaction_init (void) {
 
 void spi_slave_interface_init(void) {
     spi_slave_interface_config_t spi_salve_interface_config = {
-        .spics_io_num = SPICLK_PIN,
+        .spics_io_num = SPICS_PIN,
         .mode = 0,
     };
 }
+
+// ================= MOTOR CONTROL FUNCTIONS =======================
+
+void motor_stop(void)
+{
+    gpio_set_level(M1_PIN_IN1, 0);
+    gpio_set_level(M1_PIN_IN2, 0);
+
+    gpio_set_level(M2_PIN_IN1, 0);
+    gpio_set_level(M2_PIN_IN2, 0);
+}
+
+void motor_forward(void)
+{
+    gpio_set_level(M1_PIN_IN1, 1);
+    gpio_set_level(M1_PIN_IN2, 0);
+
+    gpio_set_level(M2_PIN_IN1, 1);
+    gpio_set_level(M2_PIN_IN2, 0);
+}
+
 // ======================== Space for any function defined by the user =============================
 
 
