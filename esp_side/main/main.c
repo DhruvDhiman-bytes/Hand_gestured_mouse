@@ -18,6 +18,10 @@
 #include "driver/spi_slave.h"
 #include "hal/spi_types.h"
 #include "soc/clk_tree_defs.h"
+#include <netinet/in.h>
+#include "lwip/netdb.h"
+#include "lwip/sys.h"
+#include "lwip/sockets.h"
 
 // ======================== Space for defining the pin using macro ===========================
 
@@ -34,6 +38,8 @@
 #define MISO_PIN 33
 #define SPICLK_PIN 14
 #define SPICS_PIN 5
+
+#define PORT 3333
 
 // ======================= Space for writing the configuration for the pins =======================
 
@@ -185,10 +191,58 @@ void process_command(char *command) {
     }
 }
 
+
+// ================== TCP SERVER ====================
+
+void start_tcp_server(void) {
+
+    char rx_buffer[128];
+
+    struct sockaddr_in server_addr;
+
+    int listen_sock = socket(AF_INET, SOCK_STREAM, IPPROTO_IP);
+
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_port = htons(PORT);
+    server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+
+    bind(listen_sock, (struct sockaddr*)&server_addr, sizeof(server_addr));
+
+    while(1) {
+        struct sockaddr_in client_addr;
+
+        unsigned int client_addr_len = sizeof(client_addr);
+
+        int sock = accept(listen_sock, (struct sockaddr *)&client_addr, &client_addr_len);
+
+        while(1) {
+            int len = recv(sock, rx_buffer, sizeof(rx_buffer) - 1, 0);
+            if (len < 0) {
+                break;
+            }
+            else if(len == 0) {
+                break;
+            }
+            else {
+                rx_buffer[len] = 0;
+
+                char *newline = strchr(rx_buffer, '\n');
+
+                if(newline) {
+                    *newline = 0;
+                }
+                process_command(rx_buffer);
+            }
+        }
+        close(sock);
+    }
+}
+
 void app_main(void)
 {
     // calling on the function for initialzing the config for the pins
     m1_pin_init();
     m2_pin_init();
 
+    start_tcp_server();
 }
