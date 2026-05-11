@@ -1,5 +1,4 @@
 /*
- *
  * In order to understand the struct or the member that are used
  * Plz refer the docs about the esp-idf API reference section for the information
  * about the struct and also the member of it.
