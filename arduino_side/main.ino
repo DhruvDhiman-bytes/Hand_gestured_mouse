@@ -27,3 +27,23 @@ void setup() {
     display.println("READY");
     diplay.display();
 }
+
+void loop() {
+    if(Serial.available()) {
+        String command = Serial.readStringUntil('\n');
+        command.trim();
+
+        Serial.print("Gesture: ");
+        Serial.println(command);
+
+        display.clearDisplay();
+
+        display.setCursor(0, 20);
+
+        display.setTextSize(2);
+
+        display.println(command);
+
+        display.display();
+    }
+}
