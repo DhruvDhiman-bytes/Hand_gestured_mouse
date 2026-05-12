@@ -2,6 +2,8 @@
 
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
+#include <SoftwareSerial.h>
+
 
 #define SCREEN_WIDTH 128
 #define SCREEN_HIGHT 64
@@ -10,6 +12,7 @@
 
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HIGHT, &Wire, OLED_RESET);
 
+SoftwareSerial espSerial(2, 3);
 
 void setup() {
     Serial.begin(9600);
