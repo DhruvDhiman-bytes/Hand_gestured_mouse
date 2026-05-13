@@ -13,6 +13,7 @@
 #include <string.h>
 #include "driver/gpio.h"
 #include "hal/gpio_types.h"
+#include "driver/uart.h"
 #include "driver/spi_master.h"
 #include "driver/spi_slave.h"
 #include "hal/spi_types.h"
@@ -40,6 +41,13 @@
 
 #define PORT 3333
 
+// UART setting
+#define UART_TX_PIN 17
+#define UART_RX_PIN 16
+
+#define UART_PORT UART_NUM_2
+#define UART_BAUD_RATE 9600
+
 // ======================= Space for writing the configuration for the pins =======================
 
 // init function for motor drivers
@@ -64,61 +72,6 @@ void m2_pin_init(void) {
     gpio_config(&m2_config);
 }
 
-void spi_bus_init(void) {
-    spi_bus_config_t spi_bus_config = {
-        .mosi_io_num = MOSI_PIN,
-        .miso_io_num = MISO_PIN,
-        .sclk_io_num = SPICLK_PIN,
-        .isr_cpu_id = 0
-    };
-    spi_bus_initialize(SPI2_HOST, &spi_bus_config, SPI_DMA_CH_AUTO);
-}
-
-// init function for spi communication master side
-
-void spi_device_interface_init(void) {
-    spi_device_interface_config_t spi_device_interface_config = {
-        .command_bits = 8,
-        .address_bits  = 0,
-        .dummy_bits = 0,
-        .mode = 0,
-        .clock_source = SPI_CLK_SRC_DEFAULT,
-        .clock_speed_hz = 40000,
-        .input_delay_ns = 0,
-    };
-}
-
-void spi_transaction_init(void) {
-    spi_transaction_t spi_transaction_config = {
-        .cmd = 8,
-        .addr = 0,
-        .length = 32,
-        .rxlength = 64,
-        .override_freq_hz = 0,
-        .tx_buffer = NULL,
-        .rx_buffer = NULL,
-    };
-}
-
-// init function for spi communication slave side
-
-//TODO -> Use a different hand shake before the device starts to receive data from the master
-
-void spi_slave_transaction_init (void) {
-    spi_slave_transaction_t spi_salve_transaction_config = {
-        .length = 32,
-        .trans_len = 32,
-        .tx_buffer = 0,
-        .rx_buffer = 0
-    };
-}
-
-void spi_slave_interface_init(void) {
-    spi_slave_interface_config_t spi_salve_interface_config = {
-        .spics_io_num = SPICS_PIN,
-        .mode = 0,
-    };
-}
 
 // ================= MOTOR CONTROL FUNCTIONS =======================
 
@@ -142,7 +95,7 @@ void motor_forward(void)
 
 void motor_backward(void) {
     gpio_set_level(M1_PIN_IN1,0);
-    gpio_set_level(M1_PIN_IN1, 1);
+    gpio_set_level(M1_PIN_IN2, 1);
 
     gpio_set_level(M2_PIN_IN1, 0);
     gpio_set_level(M2_PIN_IN2, 1);
@@ -152,7 +105,7 @@ void motor_left(void) {
     gpio_set_level(M1_PIN_IN1, 0);
     gpio_set_level(M1_PIN_IN2, 1);
 
-    gpio_set_level(M2_PIN_IN2, 1);
+    gpio_set_level(M2_PIN_IN1, 1);
     gpio_set_level(M2_PIN_IN2, 0);
 }
 
@@ -162,6 +115,28 @@ void motor_right(void) {
 
     gpio_set_level(M2_PIN_IN1, 0);
     gpio_set_level(M2_PIN_IN2, 1);
+}
+
+void uart_init(void) {
+    uart_config_t uart_config = {
+        .baud_rate = UART_BAUD_RATE,
+        .data_bits = UART_DATA_8_BITS,
+        .parity = UART_PARITY_DISABLE,
+        .stop_bits = UART_STOP_BITS_1,
+        .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
+    };
+
+    uart_driver_install(UART_PORT, 1024, 0, 0, NULL, 0);
+
+    uart_param_config(UART_PORT, &uart_config);
+
+    uart_set_pin(UART_PORT, UART_TX_PIN, UART_RX_PIN,UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
+}
+
+void uart_sent_command(char * command) {
+    uart_write_bytes(UART_PORT, command, strlen(command));
+
+    uart_write_bytes(UART_PORT, "\n", 1);
 }
 
 // ================= PROCESS RECEIVED COMMAND ===============
@@ -207,10 +182,12 @@ void start_tcp_server(void) {
 
     bind(listen_sock, (struct sockaddr*)&server_addr, sizeof(server_addr));
 
+    listen(listen_sock, 1);
+
     while(1) {
         struct sockaddr_in client_addr;
 
-        unsigned int client_addr_len = sizeof(client_addr);
+        socklen_t client_addr_len = sizeof(client_addr);
 
         int sock = accept(listen_sock, (struct sockaddr *)&client_addr, &client_addr_len);
 
