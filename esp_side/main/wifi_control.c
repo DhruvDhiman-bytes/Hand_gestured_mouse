@@ -86,7 +86,7 @@ esp_err_t wifi_init_sta(void) {
         .sta = {
             .ssid = WIFI_SSID,
             .password = WIFI_PASS,
-            .threshold.authmode = WIFI_AUTH_WPA_PSK,
+            .threshold.authmode = WIFI_AUTH_WPA2_PSK,
             .sae_pwe_h2e = WPA3_SAE_PWE_BOTH,
             .sae_h2e_identifier = "",
         },
@@ -105,6 +105,7 @@ esp_err_t wifi_init_sta(void) {
     else if (bits & WIFI_FAIL_BIT) {
         ESP_LOGI(TAG, "Failed to connect!!!");
     }
+    return ESP_OK;
 }
 
 void app_main(void) {
